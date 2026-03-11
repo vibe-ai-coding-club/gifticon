@@ -80,7 +80,7 @@
       </div>
 
       <div class="space-y-4 w-full">
-        <button id="btn-copy-link" class="w-full py-4 bg-[#FAE100] text-[#3C1E1E] rounded-xl font-bold text-lg active:scale-[0.98] transition-transform">
+        <button id="btn-copy-link" class="w-full py-4 bg-[#FAE100] text-[#3C1E1E] rounded-xl font-bold text-lg active:scale-[0.98] transition-all duration-300">
           텍스트 복사하기
         </button>
 
@@ -348,12 +348,12 @@
         copyToClipboard(text, function () {
           var origText = btn.textContent;
           btn.textContent = '✓ 복사됨';
-          btn.classList.add('bg-gray-800', 'text-white');
+          btn.classList.add('bg-slate-500', 'text-white');
           btn.classList.remove('bg-[#FAE100]', 'text-[#3C1E1E]');
           btn.disabled = true;
           setTimeout(function () {
             btn.textContent = origText;
-            btn.classList.remove('bg-gray-800', 'text-white');
+            btn.classList.remove('bg-slate-500', 'text-white');
             btn.classList.add('bg-[#FAE100]', 'text-[#3C1E1E]');
             btn.disabled = false;
           }, 2000);
