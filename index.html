@@ -29,8 +29,15 @@
     .animate-spin-slow { animation: spin 1s linear infinite; }
     @keyframes flash { 0% { background: #fff; } 30% { background: #FFEB3B; } 100% { background: #FFEB3B; } }
     .flash-bg { animation: flash 0.6s ease-out forwards; }
-    .meroeng-path { fill: none; stroke: #111; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-    #meroeng-path { transition: stroke-dashoffset 0.1s linear; }
+    .meroeng-path { fill: none; stroke: #FAE100; stroke-width: 1.25; stroke-linecap: round; stroke-linejoin: round; }
+    #meroeng-path {
+      fill: none;
+      stroke: #FAE100;
+      stroke-width: 1.25;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      opacity: 0;
+    }
 
     /* 바코드 스켈레톤 애니메이션 */
     @keyframes shimmer {
@@ -48,13 +55,44 @@
       background-color: #f3f4f6;
       border-radius: 1px;
     }
+
+    .punchline-sheet {
+      transform: translateY(100%);
+      transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .punchline-sheet.punchline-sheet--open {
+      transform: translateY(0);
+    }
+    #share-text { white-space: pre-line; }
   </style>
 </head>
 <body class="bg-gray-50 text-black min-h-screen pb-8">
-  <!-- 반전 후 전체 오버레이 (처음엔 숨김) -->
-  <div id="punchline" class="fixed inset-0 z-50 hidden flex flex-col items-center justify-center p-6 bg-[#FFEB3B]">
-    <p class="text-2xl md:text-3xl font-bold text-center mb-6">아쉽네요! 다음 기회에...😜</p>
-    <a id="btn-share" href="#" class="px-6 py-3 bg-black text-white rounded-full font-medium text-lg hidden">친구 낚으러 가기</a>
+  <!-- 결과 바텀시트 (처음엔 숨김) -->
+  <div id="punchline-wrap" class="fixed inset-0 z-40 hidden overflow-hidden">
+    <div id="punchline-backdrop" class="absolute inset-0 bg-black/40" aria-hidden="true"></div>
+    <div id="punchline" class="punchline-sheet absolute bottom-0 left-0 right-0 z-50 rounded-t-2xl bg-white flex flex-col p-6 pb-10 shadow-2xl">
+      <span class="w-10 h-1 rounded-full bg-gray-300 mb-6 self-center" aria-hidden="true"></span>
+
+      <div class="text-center mb-8">
+        <div class="inline-block px-3 py-1 bg-red-50 text-red-600 text-[11px] font-bold rounded-full mb-3">Gotcha!</div>
+        <h2 class="text-xl font-bold text-gray-900 leading-tight mb-3">이런, 당신은 당했습니다!</h2>
+        <p class="text-sm text-gray-600 leading-relaxed">방금 당신이 느낀 그 설렘과 짜증, 이제 <span class="text-black font-bold">친구에게 선물할 시간</span>입니다.</p>
+      </div>
+
+      <div class="space-y-4 w-full">
+        <button id="btn-copy-link" class="w-full py-4 bg-[#FAE100] text-[#3C1E1E] rounded-xl font-bold text-lg active:scale-[0.98] transition-transform">
+          텍스트 복사하기
+        </button>
+
+        <div class="bg-gray-50 rounded-xl p-4 border border-gray-100 relative">
+          <div class="flex items-center gap-1.5 mb-3">
+            <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+            <span class="text-[11px] font-bold text-gray-400 tracking-tight uppercase">전송될 메시지 미리보기</span>
+          </div>
+          <p id="share-text" class="text-[13px] text-gray-600 leading-relaxed break-all font-medium"></p>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- 헤더 -->
@@ -75,7 +113,7 @@
       <p class="text-xs text-gray-400">BQQ</p>
       <h1 class="text-lg font-bold text-black">[선착순] 황금몰리브+콜라1.25L</h1>
       <p class="text-sm text-black mt-0.5">2026.12.31까지</p>
-      <span class="inline-block mt-2 px-2.5 py-1 rounded-full text-xs font-medium text-white" style="background-color: #7dd3fc;">사용가능</span>
+      <span class="inline-block mt-2 px-2.5 py-1 rounded-full text-xs font-medium bg-red-50 text-red-600">마감임박</span>
     </section>
 
     <!-- 바코드 및 로딩 -->
@@ -91,9 +129,9 @@
           <!-- 노란 채움 제거: 진행은 메롱 SVG stroke-dashoffset으로 표현 -->
         </div>
         <!-- 메롱 SVG: 선 그리기(stroke-dashoffset) 애니메이션, 프로그레스 바 위치에 고정 -->
-        <div id="meroeng-wrap" class="absolute z-40 pointer-events-none bg-transparent">
+        <div id="meroeng-wrap" class="absolute z-20 pointer-events-none bg-transparent">
           <svg id="meroeng-svg" viewBox="0 0 102 55" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path id="meroeng-path" d="M1 53.4 L100.4 53.4 L100.4 47.8 C100.4 35 95 30 90 30 C80 30 70 40 75 45 C80 50 95 40 95 30 C95 25 85 23 80 23 L66 23 C66 23 75 23 85 23 C90 23 95 23 98 22 C95 22 85 22 83 22 C82 20 82 16 82 15 L91 15 C85 15 75 15 71 15 C70 15 67 12 67 11 C67 9 70 8 74 8 L95 7 C96 6 96 4 95 2 C94 1 90 1 83 1 L53 1 C52 4 52 15 52 36 L51 33 C50 31 46 27 44 27 L44 34 L44 27 C44 15 43 10 43 9 C43 8 42 3 42 3 C43 15 43 15 38 16 C34 17 33 17 33 20 C33 25 32 30 32 34 C25 38 20 35 19 35 C18 30 18 20 19 10 C19 4 19 3 20 3 C25 3 30 4 33 4 C33 4 33 15 32.9 17" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path id="meroeng-path" d="M1 53.4 L100.4 53.4 L100.4 47.8 C100.4 35 95 30 90 30 C80 30 70 40 75 45 C80 50 95 40 95 30 C95 25 85 23 80 23 L66 23 C66 23 75 23 85 23 C90 23 95 23 98 22 C95 22 85 22 83 22 C82 20 82 16 82 15 L91 15 C85 15 75 15 71 15 C70 15 67 12 67 11 C67 9 70 8 74 8 L95 7 C96 6 96 4 95 2 C94 1 90 1 83 1 L53 1 C52 4 52 15 52 36 L51 33 C50 31 46 27 44 27 L44 34 L44 27 C44 15 43 10 43 9 C43 8 42 3 42 3 C43 15 43 15 38 16 C34 17 33 17 33 20 C33 25 32 30 32 34 C25 38 20 35 19 35 C18 30 18 20 19 10 C19 4 19 3 20 3 C25 3 30 4 33 4 C33 4 33 15 32.9 17" stroke="#FAE100" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </div>
       </div>
@@ -161,8 +199,8 @@
       const meroengWrap = document.getElementById('meroeng-wrap');
       const meroengSvg = document.getElementById('meroeng-svg');
       const meroengPath = document.getElementById('meroeng-path');
+      const punchlineWrap = document.getElementById('punchline-wrap');
       const punchline = document.getElementById('punchline');
-      const btnShare = document.getElementById('btn-share');
 
       let queue = 1245;
       let progress = 0;
@@ -179,25 +217,25 @@
         return n.toLocaleString();
       }
       function setProgress(p) {
-        progress = Math.min(p, 100);
-        progressText.textContent = Math.floor(progress) + '%';
+        if (!meroengPathLen) return;
 
-        if (meroengPathLen) {
-          const lineRatio = 98 / meroengPathLen;
-          let targetOffset;
+        progress = p;
+        progressText.textContent = Math.floor(Math.min(progress, 100)) + '%';
 
-          if (progress <= 90) {
-            const lineProgress = (progress / 90) * lineRatio;
-            targetOffset = meroengPathLen * (1 - lineProgress);
-            meroengPath.style.transition = 'stroke-dashoffset 0.8s ease-out';
-          } else {
-            const textProgress = lineRatio + ((progress - 90) / 10) * (1 - lineRatio);
-            targetOffset = meroengPathLen * (1 - textProgress);
-            meroengPath.style.transition = 'stroke-dashoffset 0.3s cubic-bezier(0.19, 1, 0.22, 1)';
-          }
-
-          meroengPath.style.strokeDashoffset = targetOffset;
+        var targetOffset;
+        if (progress >= 100) {
+          targetOffset = -1;
+        } else {
+          targetOffset = meroengPathLen * (1 - progress / 100);
         }
+
+        if (progress <= 90) {
+          meroengPath.style.transition = 'stroke-dashoffset 0.6s linear';
+        } else {
+          meroengPath.style.transition = 'stroke-dashoffset 0.2s cubic-bezier(0.22, 1, 0.36, 1)';
+        }
+
+        meroengPath.style.strokeDashoffset = targetOffset;
       }
       function setQueue(n) {
         queue = Math.max(0, Math.floor(n));
@@ -230,7 +268,7 @@
         } else {
           if (!punchlineDone) {
             punchlineDone = true;
-            setProgress(99.9);
+            setProgress(100);
             loadingSpinner.classList.add('hidden');
             phase = 'punchline';
             runPunchline();
@@ -255,20 +293,77 @@
         meroengSvg.style.width = w + 'px';
         meroengSvg.style.height = h + 'px';
         if (!meroengPathLen && meroengPath.getTotalLength) {
-          meroengPathLen = meroengPath.getTotalLength();
-          meroengPath.style.strokeDasharray = String(meroengPathLen);
-          meroengPath.style.strokeDashoffset = String(meroengPathLen);
+          var actualLen = meroengPath.getTotalLength();
+          meroengPathLen = actualLen;
+
+          meroengPath.style.transition = 'none';
+          meroengPath.style.strokeDasharray = actualLen + ' ' + actualLen;
+          meroengPath.style.strokeDashoffset = String(actualLen);
+          meroengPath.style.opacity = '1';
         }
       }
       positionMeroeng();
-      window.addEventListener('resize', positionMeroeng);
 
-      poll();
-      setInterval(poll, POLL_INTERVAL);
+      setTimeout(function () {
+        if (meroengPathLen) {
+          poll();
+          setInterval(poll, POLL_INTERVAL);
+        }
+      }, 200);
+
+      window.addEventListener('resize', function () {
+        meroengPathLen = 0;
+        positionMeroeng();
+      });
 
       function runPunchline() {
         phase = 'done';
+        setTimeout(function () {
+          punchlineWrap.classList.remove('hidden');
+
+          var currentUrl = window.location.href;
+          var shareContent = '[비밀링크] 브랜드 프로모션 안내🤫\nBQQ 황금몰리브 출시 기념 선착순 1000명에게 \'치킨+콜라1.25L\' 세트를 0원에 쏩니다!\n\n아래 링크에서 지금 바로 쿠폰을 발급받으세요.\n(🚨현재 남은 수량: 41개)\n🔗 ' + currentUrl;
+
+          document.getElementById('share-text').innerText = shareContent;
+
+          requestAnimationFrame(function () {
+            punchline.classList.add('punchline-sheet--open');
+          });
+        }, 400);
       }
+
+      function copyToClipboard(text, onDone) {
+        var el = document.createElement('textarea');
+        el.value = text;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+        if (typeof onDone === 'function') onDone(); else if (onDone) alert(onDone);
+      }
+
+      document.getElementById('btn-copy-link').onclick = function () {
+        var text = document.getElementById('share-text').innerText;
+        var btn = this;
+        copyToClipboard(text, function () {
+          var origText = btn.textContent;
+          btn.textContent = '✓ 복사됨';
+          btn.classList.add('bg-gray-800', 'text-white');
+          btn.classList.remove('bg-[#FAE100]', 'text-[#3C1E1E]');
+          btn.disabled = true;
+          setTimeout(function () {
+            btn.textContent = origText;
+            btn.classList.remove('bg-gray-800', 'text-white');
+            btn.classList.add('bg-[#FAE100]', 'text-[#3C1E1E]');
+            btn.disabled = false;
+          }, 2000);
+        });
+      };
+
+      document.getElementById('punchline-backdrop').onclick = function () {
+        punchline.classList.remove('punchline-sheet--open');
+        setTimeout(function () { punchlineWrap.classList.add('hidden'); }, 350);
+      };
 
       // 탭
       document.getElementById('tab-detail').onclick = function () {
