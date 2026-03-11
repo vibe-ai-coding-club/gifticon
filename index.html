@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>[선물함] 기프티콘이 도착했습니다.</title>
+  <meta property="og:title" content="[선물함] 기프티콘이 도착했습니다." />
+  <meta property="og:description" content="선착순 이벤트 당첨! 지금 바로 바코드를 확인하세요." />
+  <meta property="og:type" content="website" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23FAE100'/><path fill='%23111' d='M16 8l2 4h4l-3 3 1 4-4-2-4 2 1-4-3-3h4z'/></svg>" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Pretendard', 'Apple SD Gothic Neo', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    body { font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif; }
+    /* 프로그래스 바 너비는 JS로 매 프레임 갱신되므로 transition 없음 */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .animate-spin-slow { animation: spin 1s linear infinite; }
+    @keyframes flash { 0% { background: #fff; } 30% { background: #FFEB3B; } 100% { background: #FFEB3B; } }
+    .flash-bg { animation: flash 0.6s ease-out forwards; }
+    .meroeng-path { fill: none; stroke: #111; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+    /* 바코드 스켈레톤 애니메이션 */
+    @keyframes shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+    .shimmer-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+      animation: shimmer 1.5s infinite;
+    }
+    .barcode-skeleton-item {
+      height: 100%;
+      background-color: #f3f4f6;
+      border-radius: 1px;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 text-black min-h-screen pb-8">
+  <!-- 반전 후 전체 오버레이 (처음엔 숨김) -->
+  <div id="punchline" class="fixed inset-0 z-50 hidden flex flex-col items-center justify-center p-6 bg-[#FFEB3B]">
+    <p class="text-2xl md:text-3xl font-bold text-center mb-6">아쉽네요! 다음 기회에...😜</p>
+    <a id="btn-share" href="#" class="px-6 py-3 bg-black text-white rounded-full font-medium text-lg hidden">친구 낚으러 가기</a>
+  </div>
+
+  <!-- 메롱 SVG (반전 시 표시, path 애니메이션) -->
+  <div id="meroeng-wrap" class="fixed inset-0 z-40 pointer-events-none hidden items-center justify-center bg-white/90">
+    <div id="line-extend" class="absolute left-0 top-1/2 h-0.5 bg-black origin-left" style="width: 0;"></div>
+    <svg id="meroeng-svg" class="relative w-64 h-24 md:w-80 md:h-28" viewBox="0 0 200 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- 메롱: stroke-dashoffset으로 쓰는 듯이 그려짐. 실제 폰트 path로 교체 가능 -->
+      <path id="meroeng-path" class="meroeng-path" d="M28 50 L28 22 L52 22 L52 50 L28 50 M32 28 L48 36 L32 44 L48 50 M62 22 L58 50 L68 50 L72 28 L82 50 L92 50 L88 22 M102 22 L102 50 L126 50 L126 22 L102 22 M106 28 L122 28 M106 36 L122 36 M106 44 L122 44 M136 22 L136 50 L160 50 L160 22 L136 22 M140 28 L156 28 M140 36 L156 36 M140 44 L156 44 M170 22 L170 50 L194 50 L194 22 L170 22 M174 28 L190 28 M174 36 L190 36 M174 44 L190 44" stroke-dasharray="1000" stroke-dashoffset="1000" />
+    </svg>
+  </div>
+
+  <!-- 헤더 -->
+  <header class="sticky top-0 z-30 bg-white border-b border-gray-200">
+    <div class="flex items-center justify-between h-12 px-4 max-w-lg mx-auto">
+      <button type="button" onclick="history.back()" class="p-2 -ml-2 text-xl text-gray-700" aria-label="뒤로가기">&lt;</button>
+      <span class="text-sm text-gray-600">선물함</span>
+      <button type="button" class="p-2 -mr-2 text-xl text-gray-700" aria-label="더보기">⁝</button>
+    </div>
+  </header>
+
+  <main class="max-w-lg mx-auto px-4 pt-4">
+    <!-- 상품 정보 -->
+    <section class="mb-6">
+      <div class="aspect-square w-full rounded-xl overflow-hidden bg-gray-200 mb-3">
+        <img src="chicken.webp" alt="황금몰리브+콜라" class="w-full h-full object-cover" onerror="this.style.background='linear-gradient(135deg,#e5e7eb 50%,#d1d5db 50%)'; this.alt='';" />
+      </div>
+      <p class="text-xs text-gray-400">BQQ</p>
+      <h1 class="text-lg font-bold text-black">[선착순] 황금몰리브+콜라1.25L</h1>
+      <p class="text-sm text-black mt-0.5">2026.12.31까지</p>
+      <span class="inline-block mt-2 px-2.5 py-1 rounded-full text-xs font-medium text-white" style="background-color: #7dd3fc;">사용가능</span>
+    </section>
+
+    <!-- 바코드 및 로딩 -->
+    <section id="barcode-section" class="mb-6">
+      <div id="progress-block" class="mb-4">
+        <div class="flex items-center justify-between gap-2 mb-1.5">
+          <p id="queue-text" class="text-sm text-gray-500 shrink-0">
+            ⚠️ 접속자 다수. <span id="queue-num" class="font-semibold text-gray-700">1,245</span>번째 대기 중
+          </p>
+          <p id="progress-text" class="text-sm font-bold text-yellow-500 tabular-nums shrink-0">0%</p>
+        </div>
+        <div class="h-1 bg-gray-100 rounded-full overflow-hidden">
+          <div id="progress-bar" class="h-full bg-yellow-400 transition-all duration-300" style="width: 0%;"></div>
+        </div>
+      </div>
+      <div id="barcode-box" class="relative rounded-xl overflow-hidden bg-white border border-gray-200 p-4 flex flex-col items-center">
+        <div class="relative w-full h-24 flex items-end justify-between gap-[2px] overflow-hidden">
+          <div class="barcode-skeleton-item w-1"></div>
+          <div class="barcode-skeleton-item w-2"></div>
+          <div class="barcode-skeleton-item w-1"></div>
+          <div class="barcode-skeleton-item w-3"></div>
+          <div class="barcode-skeleton-item w-1"></div>
+          <div class="barcode-skeleton-item w-2"></div>
+          <div class="barcode-skeleton-item w-1"></div>
+          <div class="barcode-skeleton-item w-1"></div>
+          <div class="barcode-skeleton-item w-4"></div>
+          <div class="barcode-skeleton-item w-1"></div>
+          <div class="barcode-skeleton-item w-2"></div>
+          <div class="barcode-skeleton-item w-1"></div>
+          <div class="barcode-skeleton-item w-3"></div>
+          <div class="barcode-skeleton-item w-1"></div>
+          <div class="barcode-skeleton-item w-2"></div>
+          <div class="barcode-skeleton-item w-1"></div>
+          <div class="barcode-skeleton-item w-1"></div>
+          <div class="barcode-skeleton-item w-4"></div>
+          <div class="barcode-skeleton-item w-1"></div>
+          <div class="barcode-skeleton-item w-2"></div>
+          <div class="shimmer-overlay"></div>
+        </div>
+        <div id="loading-spinner" class="mt-3 flex flex-col items-center hidden">
+          <div id="loading-spinner-inner" class="w-4 h-4 border-2 border-gray-200 border-t-yellow-400 rounded-full animate-spin mb-2"></div>
+          <p class="text-[11px] text-gray-400 font-medium tracking-tight">보안 네트워크를 통해 바코드를 생성 중입니다</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 하단 상세 -->
+    <section class="text-sm">
+      <p class="text-gray-600 mb-4">교환처: 전국 BQQ 매장 (일부 특수매장 제외)</p>
+      <div class="flex border-b border-gray-200 mb-4">
+        <button type="button" id="tab-detail" class="tab-btn px-4 py-2 font-medium border-b-2 border-black -mb-px text-black">상세정보</button>
+        <button type="button" id="tab-refund" class="tab-btn px-4 py-2 font-medium border-b-2 border-transparent -mb-px text-gray-500">유효기간 연장/환불 안내</button>
+      </div>
+      <div id="panel-detail" class="tab-panel">
+        <div class="bg-gray-100 rounded-lg p-4 text-gray-700 space-y-2">
+          <p>· 본 상품은 이벤트 경품으로 제공되었으며, 현금 환불 및 유효기간 연장이 불가합니다.</p>
+          <p>· 결제 시 바코드를 매장 직원에게 제시해 주세요.</p>
+          <p>· 배달 주문 시 BQQ 앱 또는 전화 주문으로 쿠폰 번호 12자리를 입력하세요.</p>
+        </div>
+      </div>
+      <div id="panel-refund" class="tab-panel hidden">
+        <div class="bg-gray-100 rounded-lg p-4 text-gray-700">
+          <p>유효기간 연장 및 환불은 이벤트 경품 특성상 불가합니다.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      const barcodeSection = document.getElementById('barcode-section');
+      const barcodeBox = document.getElementById('barcode-box');
+      const progressBar = document.getElementById('progress-bar');
+      const progressText = document.getElementById('progress-text');
+      const queueNumEl = document.getElementById('queue-num');
+      const loadingSpinner = document.getElementById('loading-spinner');
+      const meroengWrap = document.getElementById('meroeng-wrap');
+      const lineExtend = document.getElementById('line-extend');
+      const meroengSvg = document.getElementById('meroeng-svg');
+      const meroengPath = document.getElementById('meroeng-path');
+      const punchline = document.getElementById('punchline');
+      const btnShare = document.getElementById('btn-share');
+
+      let queue = 1245;
+      let progress = 0;
+      let phase = 'buildup';
+      let startTime = performance.now();
+      let punchlineDone = false;
+      const POLL_INTERVAL = 2500;
+      const BUILDUP_DURATION = 22000;
+      const HOPETORTURE_DURATION = 11000;
+      const PAUSE_AT_989 = 1500;
+      const EASE_IN = t => t * t;
+
+      function formatNum(n) {
+        return n.toLocaleString();
+      }
+      function setProgress(p) {
+        progress = Math.min(p, 99.9);
+        progressBar.style.width = progress + '%';
+        progressText.textContent = Math.floor(progress) + '%';
+      }
+      function setQueue(n) {
+        queue = Math.max(0, Math.floor(n));
+        queueNumEl.textContent = formatNum(Math.max(1, queue));
+      }
+
+      // 네트워크 폴링처럼 2~3초 주기로 숫자·진척도만 갱신
+      function poll() {
+        if (punchlineDone) return;
+        const now = performance.now();
+        const elapsed = now - startTime;
+
+        // 대기 인원: 폴링마다 100~200명 감소
+        const decrease = 100 + Math.floor(Math.random() * 101);
+        setQueue(queue - decrease);
+
+        // 진척도: 경과 시간 기준으로 해당 시점 값만 표시
+        if (elapsed < BUILDUP_DURATION) {
+          phase = 'buildup';
+          const t = elapsed / BUILDUP_DURATION;
+          setProgress(90 * EASE_IN(t));
+        } else if (elapsed < BUILDUP_DURATION + HOPETORTURE_DURATION) {
+          phase = 'hopetorture';
+          const t = (elapsed - BUILDUP_DURATION) / HOPETORTURE_DURATION;
+          setProgress(90 + (98.9 - 90) * t);
+          loadingSpinner.classList.add('hidden');
+        } else if (elapsed < BUILDUP_DURATION + HOPETORTURE_DURATION + PAUSE_AT_989) {
+          setProgress(98.9);
+          loadingSpinner.classList.remove('hidden');
+        } else {
+          if (!punchlineDone) {
+            punchlineDone = true;
+            setProgress(99.9);
+            loadingSpinner.classList.add('hidden');
+            phase = 'punchline';
+            runPunchline();
+          }
+        }
+      }
+      poll();
+      setInterval(poll, POLL_INTERVAL);
+
+      function runPunchline() {
+        barcodeBox.style.transition = 'transform 0.4s ease-out, opacity 0.4s ease-out';
+        barcodeBox.style.transform = 'translateY(120px)';
+        barcodeBox.style.opacity = '0';
+
+        setTimeout(function () {
+          barcodeSection.querySelector('#progress-text').classList.add('hidden');
+          document.getElementById('progress-block').classList.add('hidden');
+          queueNumEl.closest('p').classList.add('hidden');
+          meroengWrap.classList.remove('hidden');
+          meroengWrap.classList.add('flex');
+
+          lineExtend.style.transition = 'width 0.5s ease-out';
+          lineExtend.style.width = '100vw';
+
+          setTimeout(function () {
+            const path = meroengPath;
+            const len = path.getTotalLength ? path.getTotalLength() : 800;
+            path.style.strokeDasharray = len;
+            path.style.strokeDashoffset = len;
+            path.style.transition = 'stroke-dashoffset 0.8s ease-out';
+            path.style.strokeDashoffset = '0';
+
+            setTimeout(function () {
+              meroengWrap.classList.add('opacity-0');
+              meroengWrap.style.transition = 'opacity 0.3s';
+              punchline.classList.remove('hidden');
+              punchline.classList.add('flex');
+              document.body.classList.add('flash-bg');
+              punchline.classList.add('flash-bg');
+              btnShare.classList.remove('hidden');
+              phase = 'done';
+            }, 900);
+          }, 600);
+        }, 450);
+      }
+
+      // 탭
+      document.getElementById('tab-detail').onclick = function () {
+        document.getElementById('panel-detail').classList.remove('hidden');
+        document.getElementById('panel-refund').classList.add('hidden');
+        this.classList.add('border-black', 'text-black');
+        this.classList.remove('border-transparent', 'text-gray-500');
+        document.getElementById('tab-refund').classList.remove('border-black', 'text-black');
+        document.getElementById('tab-refund').classList.add('border-transparent', 'text-gray-500');
+      };
+      document.getElementById('tab-refund').onclick = function () {
+        document.getElementById('panel-refund').classList.remove('hidden');
+        document.getElementById('panel-detail').classList.add('hidden');
+        this.classList.add('border-black', 'text-black');
+        this.classList.remove('border-transparent', 'text-gray-500');
+        document.getElementById('tab-detail').classList.remove('border-black', 'text-black');
+        document.getElementById('tab-detail').classList.add('border-transparent', 'text-gray-500');
+      };
+
+    })();
+  </script>
+</body>
+</html>
