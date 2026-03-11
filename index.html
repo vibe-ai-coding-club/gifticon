@@ -30,6 +30,7 @@
     @keyframes flash { 0% { background: #fff; } 30% { background: #FFEB3B; } 100% { background: #FFEB3B; } }
     .flash-bg { animation: flash 0.6s ease-out forwards; }
     .meroeng-path { fill: none; stroke: #111; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    #meroeng-path { transition: stroke-dashoffset 0.1s linear; }
 
     /* 바코드 스켈레톤 애니메이션 */
     @keyframes shimmer {
@@ -56,15 +57,6 @@
     <a id="btn-share" href="#" class="px-6 py-3 bg-black text-white rounded-full font-medium text-lg hidden">친구 낚으러 가기</a>
   </div>
 
-  <!-- 메롱 SVG (반전 시 표시, path 애니메이션) -->
-  <div id="meroeng-wrap" class="fixed inset-0 z-40 pointer-events-none hidden items-center justify-center bg-white/90">
-    <div id="line-extend" class="absolute left-0 top-1/2 h-0.5 bg-black origin-left" style="width: 0;"></div>
-    <svg id="meroeng-svg" class="relative w-64 h-24 md:w-80 md:h-28" viewBox="0 0 200 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <!-- 메롱: stroke-dashoffset으로 쓰는 듯이 그려짐. 실제 폰트 path로 교체 가능 -->
-      <path id="meroeng-path" class="meroeng-path" d="M28 50 L28 22 L52 22 L52 50 L28 50 M32 28 L48 36 L32 44 L48 50 M62 22 L58 50 L68 50 L72 28 L82 50 L92 50 L88 22 M102 22 L102 50 L126 50 L126 22 L102 22 M106 28 L122 28 M106 36 L122 36 M106 44 L122 44 M136 22 L136 50 L160 50 L160 22 L136 22 M140 28 L156 28 M140 36 L156 36 M140 44 L156 44 M170 22 L170 50 L194 50 L194 22 L170 22 M174 28 L190 28 M174 36 L190 36 M174 44 L190 44" stroke-dasharray="1000" stroke-dashoffset="1000" />
-    </svg>
-  </div>
-
   <!-- 헤더 -->
   <header class="sticky top-0 z-30 bg-white border-b border-gray-200">
     <div class="flex items-center justify-between h-12 px-4 max-w-lg mx-auto">
@@ -88,15 +80,21 @@
 
     <!-- 바코드 및 로딩 -->
     <section id="barcode-section" class="mb-6">
-      <div id="progress-block" class="mb-4">
+      <div id="progress-block" class="mb-4 relative">
         <div class="flex items-center justify-between gap-2 mb-1.5">
           <p id="queue-text" class="text-sm text-gray-500 shrink-0">
             ⚠️ 접속자 다수. <span id="queue-num" class="font-semibold text-gray-700">1,245</span>번째 대기 중
           </p>
           <p id="progress-text" class="text-sm font-bold text-yellow-500 tabular-nums shrink-0">0%</p>
         </div>
-        <div class="h-1 bg-gray-100 rounded-full overflow-hidden">
-          <div id="progress-bar" class="h-full bg-yellow-400 transition-all duration-300" style="width: 0%;"></div>
+        <div id="progress-track" class="h-1 bg-gray-100 rounded-full overflow-hidden">
+          <!-- 노란 채움 제거: 진행은 메롱 SVG stroke-dashoffset으로 표현 -->
+        </div>
+        <!-- 메롱 SVG: 선 그리기(stroke-dashoffset) 애니메이션, 프로그레스 바 위치에 고정 -->
+        <div id="meroeng-wrap" class="absolute z-40 pointer-events-none bg-transparent">
+          <svg id="meroeng-svg" viewBox="0 0 102 55" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path id="meroeng-path" d="M1 53.4 L100.4 53.4 L100.4 47.8 C100.4 35 95 30 90 30 C80 30 70 40 75 45 C80 50 95 40 95 30 C95 25 85 23 80 23 L66 23 C66 23 75 23 85 23 C90 23 95 23 98 22 C95 22 85 22 83 22 C82 20 82 16 82 15 L91 15 C85 15 75 15 71 15 C70 15 67 12 67 11 C67 9 70 8 74 8 L95 7 C96 6 96 4 95 2 C94 1 90 1 83 1 L53 1 C52 4 52 15 52 36 L51 33 C50 31 46 27 44 27 L44 34 L44 27 C44 15 43 10 43 9 C43 8 42 3 42 3 C43 15 43 15 38 16 C34 17 33 17 33 20 C33 25 32 30 32 34 C25 38 20 35 19 35 C18 30 18 20 19 10 C19 4 19 3 20 3 C25 3 30 4 33 4 C33 4 33 15 32.9 17" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
         </div>
       </div>
       <div id="barcode-box" class="relative rounded-xl overflow-hidden bg-white border border-gray-200 p-4 flex flex-col items-center">
@@ -156,12 +154,11 @@
     (function () {
       const barcodeSection = document.getElementById('barcode-section');
       const barcodeBox = document.getElementById('barcode-box');
-      const progressBar = document.getElementById('progress-bar');
+      const progressTrack = document.getElementById('progress-track');
       const progressText = document.getElementById('progress-text');
       const queueNumEl = document.getElementById('queue-num');
       const loadingSpinner = document.getElementById('loading-spinner');
       const meroengWrap = document.getElementById('meroeng-wrap');
-      const lineExtend = document.getElementById('line-extend');
       const meroengSvg = document.getElementById('meroeng-svg');
       const meroengPath = document.getElementById('meroeng-path');
       const punchline = document.getElementById('punchline');
@@ -172,9 +169,9 @@
       let phase = 'buildup';
       let startTime = performance.now();
       let punchlineDone = false;
-      const POLL_INTERVAL = 2500;
-      const BUILDUP_DURATION = 22000;
-      const HOPETORTURE_DURATION = 11000;
+      const POLL_INTERVAL = 800;
+      const BUILDUP_DURATION = 4000;
+      const HOPETORTURE_DURATION = 2000;
       const PAUSE_AT_989 = 1500;
       const EASE_IN = t => t * t;
 
@@ -182,9 +179,25 @@
         return n.toLocaleString();
       }
       function setProgress(p) {
-        progress = Math.min(p, 99.9);
-        progressBar.style.width = progress + '%';
+        progress = Math.min(p, 100);
         progressText.textContent = Math.floor(progress) + '%';
+
+        if (meroengPathLen) {
+          const lineRatio = 98 / meroengPathLen;
+          let targetOffset;
+
+          if (progress <= 90) {
+            const lineProgress = (progress / 90) * lineRatio;
+            targetOffset = meroengPathLen * (1 - lineProgress);
+            meroengPath.style.transition = 'stroke-dashoffset 0.8s ease-out';
+          } else {
+            const textProgress = lineRatio + ((progress - 90) / 10) * (1 - lineRatio);
+            targetOffset = meroengPathLen * (1 - textProgress);
+            meroengPath.style.transition = 'stroke-dashoffset 0.3s cubic-bezier(0.19, 1, 0.22, 1)';
+          }
+
+          meroengPath.style.strokeDashoffset = targetOffset;
+        }
       }
       function setQueue(n) {
         queue = Math.max(0, Math.floor(n));
@@ -224,44 +237,37 @@
           }
         }
       }
+      var progressBlock = document.getElementById('progress-block');
+      var meroengPathLen = 0;
+      function positionMeroeng() {
+        var barRect = progressTrack.getBoundingClientRect();
+        var blockRect = progressBlock.getBoundingClientRect();
+        var barStartX = barRect.left;
+        var barCenterY = barRect.top + barRect.height / 2;
+        var anchorX = 1;
+        var anchorY = 53.4;
+        var scale = (blockRect.width * 0.9) / 102;
+        var w = 102 * scale;
+        var h = 55 * scale;
+        meroengWrap.style.position = 'absolute';
+        meroengWrap.style.left = (barStartX - blockRect.left - anchorX * (w / 102)) + 'px';
+        meroengWrap.style.top = (barCenterY - blockRect.top - anchorY * (h / 55)) + 'px';
+        meroengSvg.style.width = w + 'px';
+        meroengSvg.style.height = h + 'px';
+        if (!meroengPathLen && meroengPath.getTotalLength) {
+          meroengPathLen = meroengPath.getTotalLength();
+          meroengPath.style.strokeDasharray = String(meroengPathLen);
+          meroengPath.style.strokeDashoffset = String(meroengPathLen);
+        }
+      }
+      positionMeroeng();
+      window.addEventListener('resize', positionMeroeng);
+
       poll();
       setInterval(poll, POLL_INTERVAL);
 
       function runPunchline() {
-        barcodeBox.style.transition = 'transform 0.4s ease-out, opacity 0.4s ease-out';
-        barcodeBox.style.transform = 'translateY(120px)';
-        barcodeBox.style.opacity = '0';
-
-        setTimeout(function () {
-          barcodeSection.querySelector('#progress-text').classList.add('hidden');
-          document.getElementById('progress-block').classList.add('hidden');
-          queueNumEl.closest('p').classList.add('hidden');
-          meroengWrap.classList.remove('hidden');
-          meroengWrap.classList.add('flex');
-
-          lineExtend.style.transition = 'width 0.5s ease-out';
-          lineExtend.style.width = '100vw';
-
-          setTimeout(function () {
-            const path = meroengPath;
-            const len = path.getTotalLength ? path.getTotalLength() : 800;
-            path.style.strokeDasharray = len;
-            path.style.strokeDashoffset = len;
-            path.style.transition = 'stroke-dashoffset 0.8s ease-out';
-            path.style.strokeDashoffset = '0';
-
-            setTimeout(function () {
-              meroengWrap.classList.add('opacity-0');
-              meroengWrap.style.transition = 'opacity 0.3s';
-              punchline.classList.remove('hidden');
-              punchline.classList.add('flex');
-              document.body.classList.add('flash-bg');
-              punchline.classList.add('flash-bg');
-              btnShare.classList.remove('hidden');
-              phase = 'done';
-            }, 900);
-          }, 600);
-        }, 450);
+        phase = 'done';
       }
 
       // 탭
