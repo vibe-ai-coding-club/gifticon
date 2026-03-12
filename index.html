@@ -217,6 +217,10 @@
       const POLL_INTERVAL = 2000;
       const BUILDUP_DURATION = 100000;
       const FINAL_DURATION = 5000;
+      const RESULT_PARAM_KEY = 'result';
+      const RESULT_PARAM_VALUE = 'true';
+      const SHARE_TARGET_URL = 'https://bqq-gifticon.vercel.app';
+      let punchlineHideTimer = null;
       function formatNum(n) {
         return n.toLocaleString();
       }
@@ -245,6 +249,27 @@
       function setQueue(n) {
         queue = Math.max(0, Math.floor(n));
         queueNumEl.textContent = formatNum(Math.max(1, queue));
+      }
+
+      function isResultVisibleByUrl() {
+        const value = new URLSearchParams(window.location.search).get(RESULT_PARAM_KEY);
+        return value === RESULT_PARAM_VALUE;
+      }
+
+      function updateResultUrlState(isVisible, opts) {
+        const options = opts || {};
+        const url = new URL(window.location.href);
+        if (isVisible) {
+          url.searchParams.set(RESULT_PARAM_KEY, RESULT_PARAM_VALUE);
+        } else {
+          url.searchParams.delete(RESULT_PARAM_KEY);
+        }
+        const method = options.replace ? 'replaceState' : 'pushState';
+        window.history[method](null, '', url.toString());
+      }
+
+      function getShareContent() {
+        return '[비밀링크] 브랜드 프로모션 안내🤫\nBQQ 황금몰리브 출시 기념 선착순 1000명에게 \'치킨+콜라1.25L\' 세트를 0원에 쏩니다!\n\n아래 링크에서 지금 바로 쿠폰을 발급받으세요.\n(🚨현재 남은 수량: 41개)\n🔗 ' + SHARE_TARGET_URL;
       }
 
       // 실제 진행도 → 사용자에게 보여줄 % (프로그레스 구간이 90%처럼 보이게, 이후 있다는 걸 숨김)
@@ -296,7 +321,9 @@
             setProgress(100);
             loadingSpinner.classList.add('hidden');
             phase = 'punchline';
-            runPunchline();
+            setQueue(1);
+            updateResultUrlState(true, { replace: false });
+            syncResultVisibilityFromUrl({ immediate: false });
           }
         }
 
@@ -336,7 +363,7 @@
       positionMeroeng();
 
       setTimeout(function () {
-        if (meroengPathLen) {
+        if (meroengPathLen && !punchlineDone) {
           poll();
           pollTimer = setInterval(poll, POLL_INTERVAL);
         }
@@ -348,23 +375,54 @@
         if (meroengPathLen) setProgress(progress);
       });
 
-      function runPunchline() {
-        phase = 'done';
+      function openPunchline(opts) {
+        const options = opts || {};
+        const delayMs = options.immediate ? 0 : 400;
         var totalSeconds = Math.round((BUILDUP_DURATION + FINAL_DURATION) / 1000);
         var secondsEl = document.getElementById('punchline-seconds');
         if (secondsEl) secondsEl.textContent = totalSeconds;
+        if (punchlineHideTimer) {
+          clearTimeout(punchlineHideTimer);
+          punchlineHideTimer = null;
+        }
         setTimeout(function () {
           punchlineWrap.classList.remove('hidden');
-
-          var currentUrl = window.location.href;
-          var shareContent = '[비밀링크] 브랜드 프로모션 안내🤫\nBQQ 황금몰리브 출시 기념 선착순 1000명에게 \'치킨+콜라1.25L\' 세트를 0원에 쏩니다!\n\n아래 링크에서 지금 바로 쿠폰을 발급받으세요.\n(🚨현재 남은 수량: 41개)\n🔗 ' + currentUrl;
-
-          document.getElementById('share-text').innerText = shareContent;
+          document.getElementById('share-text').innerText = getShareContent();
 
           requestAnimationFrame(function () {
             punchline.classList.add('punchline-sheet--open');
           });
-        }, 400);
+        }, delayMs);
+      }
+
+      function closePunchline() {
+        punchline.classList.remove('punchline-sheet--open');
+        if (punchlineHideTimer) clearTimeout(punchlineHideTimer);
+        punchlineHideTimer = setTimeout(function () {
+          punchlineWrap.classList.add('hidden');
+          punchlineHideTimer = null;
+        }, 350);
+      }
+
+      function syncResultVisibilityFromUrl(opts) {
+        const options = opts || {};
+        const shouldOpen = isResultVisibleByUrl();
+
+        if (shouldOpen) {
+          if (pollTimer) {
+            clearInterval(pollTimer);
+            pollTimer = null;
+          }
+          punchlineDone = true;
+          phase = 'done';
+          if (meroengPathLen) setProgress(100);
+          setQueue(1);
+          loadingSpinner.classList.add('hidden');
+          openPunchline({ immediate: options.immediate === true });
+          return;
+        }
+
+        closePunchline();
       }
 
       function copyToClipboard(text, onDone) {
@@ -396,9 +454,13 @@
       };
 
       document.getElementById('punchline-backdrop').onclick = function () {
-        punchline.classList.remove('punchline-sheet--open');
-        setTimeout(function () { punchlineWrap.classList.add('hidden'); }, 350);
+        updateResultUrlState(false, { replace: false });
+        syncResultVisibilityFromUrl({ immediate: true });
       };
+
+      window.addEventListener('popstate', function () {
+        syncResultVisibilityFromUrl({ immediate: true });
+      });
 
       // 탭
       document.getElementById('tab-detail').onclick = function () {
@@ -417,6 +479,10 @@
         document.getElementById('tab-detail').classList.remove('border-black', 'text-black');
         document.getElementById('tab-detail').classList.add('border-transparent', 'text-gray-500');
       };
+
+      if (isResultVisibleByUrl()) {
+        syncResultVisibilityFromUrl({ immediate: true });
+      }
 
     })();
   </script>
